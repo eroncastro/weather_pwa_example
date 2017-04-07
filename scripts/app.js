@@ -51,9 +51,16 @@
     var key = selected.value;
     var label = selected.textContent;
     // TODO init the app.selectedCities array here
-    app.selectedCities
+    if (!app.selectedCities) {
+      app.selectedCities = [];
+    }
     app.getForecast(key, label);
+    console.log('key = ' + key);
+    console.log('label = ' + label);
     // TODO push the selected city to the array and save here
+    console.log(typeof app.selectedCities);
+    app.selectedCities.push({ key: key, label: label });
+    app.saveSelectedCities();
     app.toggleAddDialog(false);
   });
 
@@ -199,12 +206,12 @@
 
   // TODO add saveSelectedCities function here
   app.saveSelectedCities = function() {
-    var selectedCities = JSON.stringify(app.selectedCities);
+    console.log(app.selectedCities);
+    var selectedCities = JSON.stringify(app.selectedCities.key);
 
     localforage.setItem('selectedCities', selectedCities)
-      .then(function() {
-        return localforage.getItem('key');
-      }).then(function(value) {
+      .then(function(value) {
+        console.log(value);
         console.log('Saved selectedCities to localforage storage!');
       }).catch(function(err) {
         console.log('Failed saving selectedCities to localforage storage!');
@@ -322,23 +329,24 @@
   localforage.getItem('selectedCities')
     .then(function(selectedCities) {
       app.selectedCities = selectedCities;
+
+      if (app.selectedCities) {
+        app.selectedCities = JSON.parse(app.selectedCities);
+        app.selectedCities.forEach(function(city) {
+          app.getForecast(city.key, city.label);
+        });
+      } else {
+        app.updateForecastCard(initialWeatherForecast);
+        app.selectedCities = [
+          { key: initialWeatherForecast.key, label: initialWeatherForecast.label }
+        ];
+        app.saveSelectedCities();
+      }
     })
     .catch(function(error) {
       console.log('error');
     });
 
-  if (app.selectedCities.length) {
-    app.selectedCities = JSON.parse(app.selectedCities);
-    app.selectedCities.forEach(function(city) {
-      app.getForecast(city.key, city.label);
-    });
-  } else {
-    app.updateForecastCard(initialWeatherForecast);
-    app.selectedCities = [
-      { key: initialWeatherForecast, label: initialWeatherForecast.label }
-    ];
-    app.saveSelectedCities();
-  }
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker
